@@ -1,3 +1,4 @@
-pygame
-numpy
-pytest
+pygame==2.6.1
+numpy==2.3.3
+pytest==8.4.2
+matplotlib==3.10.7
