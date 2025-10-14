@@ -1,8 +1,10 @@
 from math import atan2, cos, isclose, pi, sin, sqrt
+import re
 from typing import NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
+from numba import njit
 
 from .type_aliases import Number
 
@@ -86,17 +88,20 @@ def compute_traj_curvature(pts: np.ndarray) -> np.ndarray:
     return np.array(curv)[mask]
 
 
+@njit
 def compute_min_k(r: Number) -> float:
     return 18 / (25 * r**2 * 5 ** (1 / 2)) * 1.5
 
 
+@njit
 def get_rot_mat(ang: float) -> np.ndarray:
     return np.array([[cos(ang), -sin(ang)], [sin(ang), cos(ang)]])
 
 
-def bspline_basis(t: float, i: int, k: int, knots: np.ndarray):
+@njit
+def bspline_basis(t: float, i: int, k: int, knots: NDArray[np.float64]) -> float:
     if k == 0:
-        return np.where((t >= knots[i]) & (t < knots[i + 1]), 1.0, 0.0)
+        return 1.0 if knots[i] <= t < knots[i + 1] else 0.0
 
     left_num = (t - knots[i]) * bspline_basis(t, i, k - 1, knots)
     left_den = knots[i + k] - knots[i]
@@ -109,7 +114,14 @@ def bspline_basis(t: float, i: int, k: int, knots: np.ndarray):
     return left + right
 
 
-bspline_basis_vectorized = np.vectorize(bspline_basis, excluded=[1, 2, 3])
+@njit
+def bspline_basis_vectorized(
+    ts: NDArray[np.float64], i: int, k: int, knots: NDArray[np.float64]
+) -> NDArray[np.float64]:
+    basis = []
+    for t in ts:
+        basis.append(bspline_basis(t, i, k, knots))
+    return np.array(basis, dtype=np.float64)
 
 
 # ============================================================
@@ -301,9 +313,15 @@ def interpolate_bsplines(waypoints: np.ndarray, params: TrajParams) -> np.ndarra
         print("Bad B spline curve order!")
         return np.array([])
 
-    knots = np.concatenate((np.zeros(k), np.linspace(0, 1, n - k + 1), np.ones(k)))
-    t = np.arange(0, 1, params.resolution).astype(float)
-    curve = np.zeros((len(t), waypoints.shape[1]))
+    knots = np.concatenate(
+        (
+            np.zeros(k, dtype=np.float64),
+            np.linspace(0, 1, n - k + 1, dtype=np.float64),
+            np.ones(k, dtype=np.float64),
+        )
+    )
+    t = np.arange(0, 1, params.resolution, dtype=np.float64)
+    curve = np.zeros((len(t), waypoints.shape[1]), dtype=np.float64)
     for i in range(n):
         Ni = bspline_basis_vectorized(t, i, k, knots)[:, None]
         curve += Ni * waypoints[i]
