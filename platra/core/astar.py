@@ -1,7 +1,7 @@
 from queue import PriorityQueue
 
-from .map import Grid
-from .type_aliases import Cell
+from .map.grid import Grid
+from ..types import Cell
 
 
 def _heuristic(c1: Cell, c2: Cell):

@@ -1,5 +1,6 @@
 import numpy as np
-from .map import CellState
+
+from .types import CellState
 
 o = CellState.OCCUPIED.value
 f = CellState.FREE.value
@@ -21,6 +22,6 @@ _occup_map_lab1 = np.array(
         [f, f, f, f, f, o, f, f, f, f],
     ]
 )
-occupancy_mats: dict[str, np.ndarray] = {
+OCCUPANCY_MATS: dict[str, np.ndarray] = {
     "lab1": _occup_map_lab1,
 }

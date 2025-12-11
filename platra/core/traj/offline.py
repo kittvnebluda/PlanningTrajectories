@@ -1,22 +1,18 @@
 from math import atan2, cos, isclose, pi, sin, sqrt
-import re
 from typing import NamedTuple
 
 import numpy as np
-from numpy.typing import NDArray
 from numba import njit
+from numpy.typing import NDArray
 
-from .type_aliases import Number
+from platra.types import Number
 
 
 class TrajParams(NamedTuple):
-    """Common parameters for trajectory generation."""
-
-    resolution: float = 100  # step along path
+    resolution: float = 100
     smooth_radius: float = 0.5  # default corner radius for C1 smoothing
     curvature_gain: float = 0.3  # gain for C2 smoothing (controls k)
     bspline_degree: int = 3
-    kind: str = "C0"
 
 
 # ============================================================
@@ -122,6 +118,15 @@ def bspline_basis_vectorized(
     for t in ts:
         basis.append(bspline_basis(t, i, k, knots))
     return np.array(basis, dtype=np.float64)
+
+
+@njit
+def compute_trajectory_length(traj: NDArray[np.float64]) -> np.float64:
+    length = np.float64(0)
+    for i in range(len(traj) - 1):
+        x, y = traj[i] - traj[i + 1]
+        length += np.sqrt(x**2 + y**2)
+    return length
 
 
 # ============================================================
@@ -326,4 +331,4 @@ def interpolate_bsplines(waypoints: np.ndarray, params: TrajParams) -> np.ndarra
         Ni = bspline_basis_vectorized(t, i, k, knots)[:, None]
         curve += Ni * waypoints[i]
     curve = np.vstack((curve, waypoints[-1]))
-    return curve
+    return interpolate_c0(curve, params)

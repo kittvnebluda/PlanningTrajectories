@@ -1,9 +1,9 @@
 from typing import Iterable, NamedTuple
 
 import numpy as np
-from pygame import Surface, Vector2, draw
+from pygame import Surface, draw
 
-from .utils import ScreenParams, to_screen
+from .screen import ScreenParams, to_screen
 
 
 class DrawParams(NamedTuple):
@@ -13,21 +13,6 @@ class DrawParams(NamedTuple):
     dashed: bool = False
     dash_len: float = 0.05
     gap_len: float = 0.05
-
-
-def draw_robot(
-    surface: Surface, state, draw_params: DrawParams, screen_params: ScreenParams
-) -> None:
-    theta = state.pose.theta
-
-    p1 = Vector2(draw_params.size, 0).rotate_rad(theta)
-    p2 = Vector2(-draw_params.size / 4, draw_params.size / 2).rotate_rad(theta)
-    p3 = Vector2(-draw_params.size / 4, -draw_params.size / 2).rotate_rad(theta)
-
-    pts = (p1 + state.pose.pos, p2 + state.pose.pos, p3 + state.pose.pos)
-    pts_px = [to_screen(pt.x, pt.y, screen_params) for pt in pts]
-
-    draw.polygon(surface, draw_params.color, pts_px)
 
 
 def draw_pts(
@@ -45,7 +30,7 @@ def draw_pts(
         )
 
 
-def draw_line(
+def draw_pts_connected(
     surface: Surface,
     pts: np.ndarray,
     draw_params: DrawParams,
