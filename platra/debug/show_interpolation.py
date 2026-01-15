@@ -1,15 +1,15 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from ..trajectory import (
+from platra.core.traj import (
+    TRAJ_WPS,
+    TrajParams,
     interpolate_bsplines,
     interpolate_c0,
     interpolate_c1,
     interpolate_c2,
     interpolate_cubic_parabola,
 )
-from ..trajectory import TrajParams
-from ..trajectories import TRAJECTORIES
 
 
 def show_trajectory(interp_func, pts):
@@ -43,10 +43,10 @@ if __name__ == "__main__":
 
     p1 = subparsers.add_parser("traj", help="Visualize trajectory")
     p1.add_argument("continuity_class", choices=interp_funcs.keys())
-    p1.add_argument("pts", choices=TRAJECTORIES.keys())
+    p1.add_argument("pts", choices=TRAJ_WPS.keys())
     p1.set_defaults(
         factory=lambda args: show_trajectory(
-            interp_funcs[args.continuity_class], TRAJECTORIES[args.pts].waypoints
+            interp_funcs[args.continuity_class], TRAJ_WPS[args.pts].waypoints
         )
     )
 

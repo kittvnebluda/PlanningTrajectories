@@ -1,5 +1,4 @@
 from math import cos, pi, sin
-from typing import Any, Generator
 
 import numpy as np
 import pygame
@@ -8,8 +7,7 @@ from numpy.typing import NDArray
 from pygame import Surface, event
 
 from platra.constants import PI_DOUBLE, PI_DOUBLE_NEG
-from platra.core.robot import AckermannConfigForStaticFeedback, create_robot_model
-from platra.core.robot.base import RobotState
+from platra.core.robot.ackermann import AckermannState
 from platra.core.robot.configs import AckermannConfigForDynamicFeedback
 from platra.core.robot.controllers import (
     DynamicFeedbackByStateController,
@@ -19,14 +17,23 @@ from platra.core.symbolic.ackermann import (
     LambdifiedAckermannForDynamicFeedback,
     LambdifiedAckermannForStaticFeedback,
 )
-from platra.core.traj.primitives import ArcPrimitive, StraightLineTimedPrimitive
-from platra.core.traj.stitcher import stitch
-from platra.disp.draw import DrawParams, draw_pts
-from platra.disp.robot import draw_ackermann
+from platra.core.traj import (
+    ArcPrimitive,
+    SequenceTrajectory,
+    StraightLinePrimitive,
+    Trajectory,
+    TrajSample,
+)
+from platra.disp.draw import DrawParams, draw_points
+from platra.disp.robotviz import draw_ackermann
 from platra.disp.screen import ScreenParams
 
+from .labs import Laboratory
 
-class Lab2TrajTracking:
+VEC2_ZERO = np.zeros(2)
+
+
+class TrajTracking(Laboratory):
     """
     Implements a specific trajectory for a mobile robot.
 
@@ -79,7 +86,7 @@ class Lab2TrajTracking:
         )
         self.reg = DynamicFeedbackByStateController(self.conf)
 
-        initial_state = RobotState(initial_xsi.copy(), -self.conf.alpha3s, 0, 0)
+        initial_state = AckermannState(initial_xsi.copy(), -self.conf.alpha3s, 0, 0)
         self.robot = create_robot_model(self.conf, initial_state)
 
         self.traj_draw_params = DrawParams(size=2, color=(0, 0, 255))
@@ -89,12 +96,7 @@ class Lab2TrajTracking:
 
         self.screen_params = ScreenParams(1920, 1080, 30, shift=(0, 500))
 
-        self.target = initial_xsi[:2]
-        self.target_prev = initial_xsi[:2]
-        self.target_diff = np.zeros(2)
-        self.target_diff_prev = np.zeros(2)
-        self.target_ddiff = np.zeros(2)
-        self.target_ddiff_prev = np.zeros(2)
+        self.target = TrajSample(pos=initial_xsi[:2])
         self.traj = self._traj_generator(
             initial_xsi,
             radius_1,
@@ -104,74 +106,58 @@ class Lab2TrajTracking:
             radius_2,
             clockwise,
         )
-        self._complete_traj = np.array(
-            list(
-                self._traj_generator(
-                    initial_xsi,
-                    radius_1,
-                    delta,
-                    alpha,
-                    time,
-                    radius_2,
-                    clockwise,
-                )
-            )
-        )
+        self._complete_traj = self.traj.samples()
 
     def _traj_generator(
         self, initial_xsi, R1, delta, alpha, time, R2, clockwise, samples=1000
-    ) -> Generator[NDArray, Any, None]:
+    ) -> Trajectory:
         angle1 = alpha + initial_xsi[2] + delta
         angle2 = PI_DOUBLE_NEG if clockwise else PI_DOUBLE
+
+        res = 0.1
+        vel_norm = 0.5
 
         primitives = []
         primitives.append(
             ArcPrimitive(
                 radius=R1,
                 arc_len=delta,
-                shift=initial_xsi[:2] + np.array([-R1, 0]),
-                angle=0,
-                samples=samples,
+                center_shift=initial_xsi[:2] + np.array([-R1, 0]),
+                circle_rot=0,
+                resolution=res,
+                vel_norm=vel_norm,
             )
         )
         primitives.append(
-            StraightLineTimedPrimitive(
+            StraightLinePrimitive(
                 end=(10 * cos(angle1), 10 * sin(angle1)),
-                time=time,
-                samples=int(samples * 0.5),
+                vel_norm=vel_norm,
+                resolution=res,
             )
         )
         primitives.append(
             ArcPrimitive(
                 radius=R2,
                 arc_len=angle2,
-                shift=np.array(
+                center_shift=np.array(
                     [
                         -R2 * cos(alpha + delta - pi / 5),
                         -R2 * sin(alpha + delta - pi / 5),
                     ]
                 ),
-                angle=pi + pi / 10,
-                samples=int(samples * 2),
+                circle_rot=pi + pi / 10,
+                resolution=res,
+                vel_norm=vel_norm,
             )
         )
 
-        gen = stitch(primitives)
-        return gen
-
-    def handle_keyup(self, key: event.Event) -> None:
-        pass
-
-    def handle_keydown(self, key: event.Event) -> None:
-        pass
-
-    def handle_mouse(self, surface: Surface) -> None:
-        pass
+        traj = SequenceTrajectory(primitives)
+        return traj
 
     def draw(self, surface: Surface, dt: float):
         if np.linalg.norm(self.target - self.conf.h(self.robot.state)) < 0.5:
             try:
-                self.target = next(self.traj)
+                self.target = self.traj.sample()
                 self.path.append(self.conf.h(self.robot.state))
                 self.path_err.append(
                     np.min(np.linalg.norm(self._complete_traj - self.path[-1], axis=1))
@@ -199,33 +185,27 @@ class Lab2TrajTracking:
 
                 exit()
 
-        self.target_diff = (self.target - self.target_prev) / dt
-        self.target_ddiff = (self.target_diff - self.target_diff_prev) / dt
-        v = self.reg.update_control(
+        v = self.reg.compute_control(
             self.robot.state,
-            self.target,
-            self.target_diff,
-            self.target_ddiff,
+            self.target.pos,
+            self.target.vel,
+            self.target.acc,
             dt,
         )
-        self.target_prev = self.target
-        self.target_diff_prev = self.target_diff
-        self.target_ddiff_prev = self.target_ddiff
         self.vs.append(v)
         self.robot.step(v[0], v[1], dt)
 
-        # Drawing
-        draw_pts(
+        draw_points(
             surface, self._complete_traj, self.traj_draw_params, self.screen_params
         )
-        draw_pts(surface, self.path, self.path_draw_params, self.screen_params)
-        draw_pts(surface, [self.target], self.target_draw_params, self.screen_params)
+        draw_points(surface, self.path, self.path_draw_params, self.screen_params)
+        draw_points(surface, [self.target], self.target_draw_params, self.screen_params)
         draw_ackermann(
             surface, self.robot, self.robot_draw_params, self.screen_params, draw_h=True
         )
 
 
-class Lab2Teleop(Lab2TrajTracking):
+class Teleop(TrajTracking):
     def __init__(self) -> None:
         self.speed_mod = 0
         self.steering_mod = 0
@@ -237,7 +217,7 @@ class Lab2Teleop(Lab2TrajTracking):
             0.35, 1, 0.4, 0.2, LambdifiedAckermannForStaticFeedback
         )
         self.reg = StaticFeedbackByStateController(conf, L1, L2)
-        initial_state = RobotState(
+        initial_state = AckermannState(
             np.array([0, 0, 0], dtype=float), -conf.alpha3s, 0, 0
         )
         self.robot = create_robot_model(conf, initial_state)

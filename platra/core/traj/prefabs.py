@@ -37,7 +37,7 @@ BOOK_EX = TrajectoryData(
     corner_radii=[1.2, 2, 1, 2, 0.5, 0.5, 0.5, 2],
 )
 
-TRAJECTORIES: dict[str, TrajectoryData] = {
+TRAJ_WPS: dict[str, TrajectoryData] = {
     "triangle": TRIANGLE,
     "six": SIX,
     "cross": CROSS_SHAPE,

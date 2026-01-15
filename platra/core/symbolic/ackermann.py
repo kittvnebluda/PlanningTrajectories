@@ -5,19 +5,19 @@ from sympy import (
     cos,
     diff,
     lambdify,
-    latex,
     pi,
-    pprint,
-    simplify,
     sin,
     sqrt,
     symbols,
 )
 
-from platra.core.robot.base import RobotState, RobotStateExt
+from platra.core.robot.ackermann import AckermannState, AckermannStateExt
 from platra.core.robot.configs import AckermannConfigForStaticFeedback
 
-from .base import R, nu, x, y
+from .common import nu, x, y
+
+xsi = Matrix([x, y, nu])
+R = Matrix([[cos(nu), sin(nu), 0], [-sin(nu), cos(nu), 0], [0, 0, 1]])
 
 alpha_3s, beta_3s, Ls, Lf, e = symbols("alpha_3s beta_3s L_s L_f e")
 eta, zeta = symbols("eta, zeta")
@@ -83,22 +83,22 @@ class LambdifiedAckermannForStaticFeedback:
             [x, y, nu, beta_3s, eta, zeta], self._g_subed, "numpy"
         )
 
-    def rts_fn(self, state: RobotState) -> Callable:
+    def rts_fn(self, state: AckermannState) -> Callable:
         return self.rts_lambdified(
             state.xsi[0], state.xsi[1], state.xsi[2], state.beta_s
         ).reshape(-1)
 
-    def h_fn(self, state: RobotState) -> Callable:
+    def h_fn(self, state: AckermannState) -> Callable:
         return self.h_lambdified(
             state.xsi[0], state.xsi[1], state.xsi[2], state.beta_s
         ).reshape(-1)
 
-    def k_inv_fn(self, state: RobotState) -> Callable:
+    def k_inv_fn(self, state: AckermannState) -> Callable:
         return self.k_inv_lambdified(
             state.xsi[0], state.xsi[1], state.xsi[2], state.beta_s
         )
 
-    def g_fn(self, state: RobotState) -> Callable:
+    def g_fn(self, state: AckermannState) -> Callable:
         return self.g_lambdified(
             state.xsi[0],
             state.xsi[1],
@@ -212,20 +212,20 @@ class LambdifiedAckermannForDynamicFeedback:
             [nu, beta_3s, eta, zeta, v1], self._b_subed, "numpy"
         )
 
-    def rts_fn(self, s: RobotState) -> Callable:
+    def rts_fn(self, s: AckermannState) -> Callable:
         return self.rts_lambdified(s.x, s.y, s.nu, s.beta_s).reshape(-1)
 
-    def h_fn(self, s: RobotState) -> Callable:
+    def h_fn(self, s: AckermannState) -> Callable:
         return self.h_lambdified(s.x, s.y, s.nu, s.beta_s).reshape(-1)
 
-    def h_dot_fn(self, s: RobotState) -> Callable:
+    def h_dot_fn(self, s: AckermannState) -> Callable:
         return self.h_dot_lambdified(s.nu, s.beta_s, s.eta).reshape(-1)
 
-    def h_ddot_fn(self, s: RobotStateExt) -> Callable:
+    def h_ddot_fn(self, s: AckermannStateExt) -> Callable:
         return self.h_ddot_lambdified(s.nu, s.beta_s, s.eta, s.zeta, s.v1).reshape(-1)
 
-    def a_inv_fn(self, s: RobotState) -> Callable:
+    def a_inv_fn(self, s: AckermannState) -> Callable:
         return self.a_inv_lambdified(s.nu, s.beta_s, s.eta)
 
-    def b_fn(self, s: RobotStateExt) -> Callable:
+    def b_fn(self, s: AckermannStateExt) -> Callable:
         return self.b_lambdified(s.nu, s.beta_s, s.eta, s.zeta, s.v1).reshape(-1)

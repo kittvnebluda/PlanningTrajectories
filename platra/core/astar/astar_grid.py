@@ -1,11 +1,10 @@
 from queue import PriorityQueue
 
-from .map.grid import Grid
-from ..types import Cell
+from platra.types import Cell
 
-
-def _heuristic(c1: Cell, c2: Cell):
-    return ((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2) ** (1 / 2)
+from ..map import Grid
+from .neighbors import grid_neighbors_8
+from .heuristics import h_euclidian
 
 
 def _discover_map(map: Grid, start: Cell, goal: Cell) -> dict[Cell, Cell]:
@@ -22,11 +21,11 @@ def _discover_map(map: Grid, start: Cell, goal: Cell) -> dict[Cell, Cell]:
         if current == goal:
             return came_from
 
-        neighbors = map.neighbors(current)
+        neighbors = grid_neighbors_8(map, current)
         for next in neighbors:
             new_cost = cost_so_far[current] + map.cost(current, next)
             if next not in cost_so_far or new_cost < cost_so_far[next]:
-                frontier.put((new_cost + _heuristic(current, goal), next))
+                frontier.put((new_cost + h_euclidian(current, goal), next))
                 came_from[next] = current
                 cost_so_far[next] = new_cost
 

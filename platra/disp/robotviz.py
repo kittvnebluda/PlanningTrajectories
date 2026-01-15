@@ -4,27 +4,26 @@ import numpy as np
 from pygame import Surface, Vector2, draw
 
 from platra.constants import PI3DIV2
-from platra.core.robot.base import RobotModel, RobotState
-from platra.core.robot.configs import AckermannConfigForStaticFeedback
+from platra.core.robot.ackermann import AckermannConfig, AckermannModel, AckermannState
 
 from .draw import DrawParams
 from .screen import ScreenParams, np_vec2screen, to_screen
 
 
-def draw_arrowhead(
+def draw_cursor(
     surface: Surface,
     pose: np.ndarray,  # [x, y, theta]
     draw_params: DrawParams,
     screen_params: ScreenParams,
 ) -> None:
-    theta = pose[2]
-
-    p0 = Vector2(pose[0], pose[1])
-    p1 = Vector2(draw_params.size, 0).rotate_rad(theta)
-    p2 = Vector2(-draw_params.size / 4, draw_params.size / 2).rotate_rad(theta)
-    p3 = Vector2(-draw_params.size / 4, -draw_params.size / 2).rotate_rad(theta)
-
-    pts = (p1 + p0, p2 + p0, p3 + p0)
+    origin = Vector2(pose[0], pose[1])
+    pts = [
+        Vector2(draw_params.size, 0),
+        Vector2(-draw_params.size / 4, draw_params.size / 2),
+        Vector2(0, 0),
+        Vector2(-draw_params.size / 4, -draw_params.size / 2),
+    ]
+    pts = [origin + p.rotate_rad(pose[2]) for p in pts]
     pts_px = [to_screen(pt.x, pt.y, screen_params) for pt in pts]
     draw.polygon(surface, draw_params.color, pts_px)
 
@@ -33,12 +32,11 @@ def _draw_ackerman_body(
     surface: Surface,
     screen_params: ScreenParams,
     draw_params: DrawParams,
-    robot: RobotModel[AckermannConfigForStaticFeedback],
+    robot: AckermannModel,
 ) -> None:
     c = robot.conf
     half_width = c.Lf
     axle_dist = c.Ls
-    wheel_r = c.r
 
     front_overhang = 0.9 * axle_dist
     rear_overhang = 0
@@ -124,7 +122,7 @@ def _draw_wheel(
     surface: Surface,
     screen_params: ScreenParams,
     draw_params: DrawParams,
-    state: RobotState,
+    state: AckermannState,
     beta: float,
     length: float,
     angle: float,
@@ -158,7 +156,7 @@ def _draw_wheel(
 def _draw_wheel_axes(
     surface: Surface,
     screen_params: ScreenParams,
-    state: RobotState,
+    state: AckermannState,
     beta: float,
     length: float,
     angle: float,
@@ -175,7 +173,7 @@ def _draw_wheel_axes(
     draw.line(surface, "black", axis_pts_px[0], axis_pts_px[1])
 
 
-def _calc_beta_4s(beta_3s: float, conf: AckermannConfigForStaticFeedback) -> float:
+def _calc_beta_4s(beta_3s: float, conf: AckermannConfig) -> float:
     if isclose(-conf.alpha3s, beta_3s):
         return pi - conf.alpha4s
     return (
@@ -188,7 +186,7 @@ def _calc_beta_4s(beta_3s: float, conf: AckermannConfigForStaticFeedback) -> flo
 def _draw_h(
     surface: Surface,
     screen_params: ScreenParams,
-    robot: RobotModel[AckermannConfigForStaticFeedback],
+    robot: AckermannModel,
 ) -> None:
     s = robot.state
     c = robot.conf
@@ -202,7 +200,7 @@ def _draw_h(
 
 def draw_ackermann(
     surface: Surface,
-    robot: RobotModel[AckermannConfigForStaticFeedback],
+    robot: AckermannModel,
     draw_params: DrawParams,
     screen_params: ScreenParams,
     draw_wheel_axes: bool = False,

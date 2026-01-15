@@ -4,10 +4,9 @@ from typing import Callable
 import numpy as np
 import pygame
 
-from platra.utils import ScreenParams
-
-from ..map import CellState, Grid, fit_map_to_screen
-from ..maps import occupancy_mats
+from platra.core.map import OCCUPANCY_MATS, CellState, Grid
+from platra.disp import ScreenParams
+from platra.disp import gridviz as gv
 
 
 def _test_grid_draw(args):
@@ -23,12 +22,13 @@ def _test_grid_draw(args):
     screen = pygame.display.set_mode((screen_params.width, screen_params.height))
 
     screen.fill((255, 255, 255))
-    grid_params = fit_map_to_screen(
+    grid_params = gv.fit_map_to_screen(
         screen_params,
         *grid.shape,
     )
     print(grid.occupancy)
-    grid.draw(
+    gv.draw_grid(
+        grid,
         screen,
         *grid_params,
         screen_params,
@@ -43,7 +43,7 @@ def _test_grid_draw(args):
 
 
 def _test_grid_collections(args):
-    grid = Grid(occupancy_mats[args.map_name])
+    grid = Grid(OCCUPANCY_MATS[args.map_name])
     grid.occupancy[1, 1] = CellState.START.value
     grid.occupancy[9, 9] = CellState.GOAL.value
 
@@ -53,9 +53,10 @@ def _test_grid_collections(args):
     screen = pygame.display.set_mode((screen_params.width, screen_params.height))
 
     screen.fill((255, 255, 255))
-    grid.draw(
+    gv.draw_grid(
+        grid,
         screen,
-        *fit_map_to_screen(
+        *gv.fit_map_to_screen(
             screen_params,
             *grid.shape,
         ),
@@ -83,7 +84,7 @@ if __name__ == "__main__":
         choices=test_func_dict.keys(),
         help="Name of a test function",
     )
-    parser.add_argument("-m", "--map_name", type=str, choices=occupancy_mats.keys())
+    parser.add_argument("-m", "--map_name", type=str, choices=OCCUPANCY_MATS.keys())
     args = parser.parse_args()
     try:
         test_func_dict[args.test_func](args)

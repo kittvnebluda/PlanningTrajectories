@@ -1,37 +1,24 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator
+from sys import maxsize
+from typing import Iterable
 
 import numpy as np
 
 from platra.types import Cell, Number
 
+from .map import CellState
 from .prefabs import OCCUPANCY_MATS
-from .types import CellState
-
-cell_state_colors: dict[CellState, tuple[int, int, int]] = {
-    CellState.OCCUPIED: (60, 60, 60),
-    CellState.FREE: (255, 255, 255),
-    CellState.DENSE: (200, 255, 200),
-    CellState.START: (255, 0, 0),
-    CellState.GOAL: (0, 0, 255),
-}
 
 
 class Grid:
     def __init__(self, occupancy: np.ndarray):
         self.occupancy = occupancy.astype(int)
         self.rows, self.cols = self.occupancy.shape
-        self._directions = [
-            (-1, 0),
-            (0, -1),
-            (1, 0),
-            (0, 1),
-            (-1, -1),
-            (1, -1),
-            (1, 1),
-            (-1, 1),
-        ]
+
+    @property
+    def shape(self):
+        return self.cols, self.rows
 
     def in_bounds(self, cell: Cell) -> bool:
         return 0 <= cell[0] < self.rows and 0 <= cell[1] < self.cols
@@ -41,21 +28,6 @@ class Grid:
             self.in_bounds(cell)
             and self.occupancy[cell[0], cell[1]] != CellState.OCCUPIED.value
         )
-
-    def neighbors(self, cell: Cell) -> Iterator[Cell]:
-        i, j = cell
-
-        for di, dj in self._directions:
-            ni, nj = i + di, j + dj
-
-            if not self.is_free((ni, nj)):
-                continue
-
-            if di != 0 and dj != 0:
-                if not (self.is_free((i + di, j)) and self.is_free((i, j + dj))):
-                    continue
-
-            yield ni, nj
 
     def set_cell_state(self, cell: Cell, state: CellState):
         if self.in_bounds(cell):
@@ -67,15 +39,15 @@ class Grid:
     def clear_cell(self, cell: Cell):
         self.set_cell_state(cell, CellState.FREE)
 
-    def cost(self, current: Cell, next: Cell) -> int:  # pyright: ignore[reportReturnType]
+    def clear_all(self):
+        self.occupancy.fill(0)
+
+    def cost(self, current: Cell, next: Cell) -> int:
         if self.in_bounds(current) and self.in_bounds(next):
             return ((current[0] - next[0]) ** 2 + (current[1] - next[1]) ** 2) ** (
                 1 / 2
             ) * self.occupancy[next[0], next[1]]
-
-    @property
-    def shape(self):
-        return self.cols, self.rows
+        return maxsize
 
     def add_rectangle(
         self, top_left: Cell, bottom_right: Cell, state: CellState = CellState.OCCUPIED
@@ -99,13 +71,12 @@ class Grid:
                 if rng.random() < density:
                     self.set_obstacle((i, j))
 
-    def clear_all(self):
-        self.occupancy.fill(0)
-
     @classmethod
     def from_name(cls, name: str) -> Grid:
         if name not in OCCUPANCY_MATS:
-            raise Exception("No such grid prefab")
+            raise Exception(
+                f"No such grid prefab. Available: {', '.join(tuple(OCCUPANCY_MATS.keys()))}"
+            )
         return Grid(OCCUPANCY_MATS[name])
 
 

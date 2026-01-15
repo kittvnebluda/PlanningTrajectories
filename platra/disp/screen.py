@@ -22,11 +22,11 @@ class ScreenParams:
         object.__setattr__(self, "px2meters", 1 / self.meter2px)
 
 
-def x2screen(x: float, params: ScreenParams) -> int:
+def x2px(x: float, params: ScreenParams) -> int:
     return int(x * params.meter2px + params.half_width + params.shift[0])
 
 
-def y2screen(y: float, params: ScreenParams) -> int:
+def y2px(y: float, params: ScreenParams) -> int:
     return int(-y * params.meter2px + params.half_height + params.shift[1])
 
 
@@ -38,7 +38,7 @@ def from_screen(x: int, y: int, params: ScreenParams) -> tuple[float, float]:
 
 
 def to_screen(x: float, y: float, params: ScreenParams) -> Pixel:
-    return x2screen(x, params), y2screen(y, params)
+    return x2px(x, params), y2px(y, params)
 
 
 def vec2screen(v: Vector2, params: ScreenParams) -> Pixel:

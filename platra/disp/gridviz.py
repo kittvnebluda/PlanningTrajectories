@@ -2,7 +2,9 @@ from typing import Callable
 
 from pygame import Rect, Surface, draw
 
-from ..core.map.grid import CellState, Grid, cell_state_colors, grid_to_world
+from platra.core.map.map import cell_state_colors
+
+from ..core.map.grid import CellState, Grid, grid_to_world
 from ..types import Cell, Number
 from .screen import ScreenParams, to_screen
 
@@ -16,7 +18,7 @@ def draw_grid(
     screen_params: ScreenParams,
 ):
     """Draw the grid occupancy map on a surface."""
-    border_width = int(scale * 15)  # BUG: w/ low scale border is not thick enough
+    border_width = int(scale)  # BUG: w/ low scale border is not thick enough
     d = scale * screen_params.meter2px
     dh = d // 2
     cell2screen = cell_to_screen_factory(scale, shift_x, shift_y, screen_params)

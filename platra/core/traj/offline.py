@@ -1,5 +1,5 @@
 from math import atan2, cos, isclose, pi, sin, sqrt
-from typing import NamedTuple
+from typing import Sequence
 
 import numpy as np
 from numba import njit
@@ -7,13 +7,7 @@ from numpy.typing import NDArray
 
 from platra.types import Number
 
-
-class TrajParams(NamedTuple):
-    resolution: float = 100
-    smooth_radius: float = 0.5  # default corner radius for C1 smoothing
-    curvature_gain: float = 0.3  # gain for C2 smoothing (controls k)
-    bspline_degree: int = 3
-
+from .traj import TrajParams
 
 # ============================================================
 #  Geometry helpers
@@ -48,40 +42,6 @@ def compute_corner_radius(
 
     r = a * abs(np.tan(angle / 2)) / 2
     return r, angle
-
-
-def compute_curvature(
-    p_prev: np.ndarray, p_curr: np.ndarray, p_next: np.ndarray
-) -> float:
-    """Compute discrete curvature for three points."""
-    a = np.linalg.norm(p_curr - p_prev)
-    b = np.linalg.norm(p_next - p_curr)
-    c = np.linalg.norm(p_next - p_prev)
-
-    if a * b * c == 0:
-        return 0.0
-
-    area = 0.5 * np.abs(
-        (p_prev[0] - p_next[0]) * (p_curr[1] - p_prev[1])
-        - (p_prev[0] - p_curr[0]) * (p_next[1] - p_prev[1])
-    )
-    return 4 * area / (a * b * c)
-
-
-def iqr_mask(arr, k=1.5) -> np.ndarray:
-    q1, q3 = np.percentile(arr, [25, 75])
-    iqr = q3 - q1
-    lower = q1 - k * iqr
-    upper = q3 + k * iqr
-    return (arr >= lower) & (arr <= upper)  # Boolean mask of outliers
-
-
-def compute_traj_curvature(pts: np.ndarray) -> np.ndarray:
-    curv = []
-    for i in range(len(pts) - 2):
-        curv.append(compute_curvature(pts[i], pts[i + 1], pts[i + 2]))
-    mask = iqr_mask(curv)
-    return np.array(curv)[mask]
 
 
 @njit
@@ -120,15 +80,6 @@ def bspline_basis_vectorized(
     return np.array(basis, dtype=np.float64)
 
 
-@njit
-def compute_trajectory_length(traj: NDArray[np.float64]) -> np.float64:
-    length = np.float64(0)
-    for i in range(len(traj) - 1):
-        x, y = traj[i] - traj[i + 1]
-        length += np.sqrt(x**2 + y**2)
-    return length
-
-
 # ============================================================
 #  Trajectory interpolation
 # ============================================================
@@ -142,6 +93,8 @@ def interpolate_c0(waypoints: np.ndarray, params: TrajParams) -> np.ndarray:
     for i in range(len(waypoints) - 1):
         p1, p2 = waypoints[i], waypoints[i + 1]
         segment = np.linspace(p1, p2, int(np.linalg.norm(p2 - p1) / params.resolution))
+        if len(segment) == 0:
+            continue
         pts.append(segment)
     return np.vstack(pts)
 

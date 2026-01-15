@@ -1,6 +1,6 @@
 import numpy as np
 
-from .types import CellState
+from .map import CellState
 
 o = CellState.OCCUPIED.value
 f = CellState.FREE.value
@@ -22,6 +22,18 @@ _occup_map_lab1 = np.array(
         [f, f, f, f, f, o, f, f, f, f],
     ]
 )
+n_rows, n_cols = 50, 100
+_occup_map_parking_lot = np.full((n_rows, n_cols), f)
+_occup_map_parking_lot[0, :] = o  # top border
+_occup_map_parking_lot[-1, :] = o  # bottom border
+_occup_map_parking_lot[:, 0] = o  # left border
+_occup_map_parking_lot[:, -1] = o  # right border
+_occup_map_parking_lot[15, :5] = o
+_occup_map_parking_lot[15, 10:30] = o
+_occup_map_parking_lot[15:25, 10] = o
+_occup_map_parking_lot[15:25, 30] = o
+
 OCCUPANCY_MATS: dict[str, np.ndarray] = {
     "lab1": _occup_map_lab1,
+    "parking_lot": _occup_map_parking_lot,
 }
