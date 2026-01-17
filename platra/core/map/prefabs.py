@@ -28,10 +28,13 @@ _occup_map_parking_lot[0, :] = o  # top border
 _occup_map_parking_lot[-1, :] = o  # bottom border
 _occup_map_parking_lot[:, 0] = o  # left border
 _occup_map_parking_lot[:, -1] = o  # right border
-_occup_map_parking_lot[15, :5] = o
-_occup_map_parking_lot[15, 10:30] = o
-_occup_map_parking_lot[15:25, 10] = o
-_occup_map_parking_lot[15:25, 30] = o
+
+_occup_map_parking_lot[17, :13] = o
+_occup_map_parking_lot[15:20, 13] = o
+_occup_map_parking_lot[15:20, 27] = o
+
+_occup_map_parking_lot[40, :50] = o
+
 
 OCCUPANCY_MATS: dict[str, np.ndarray] = {
     "lab1": _occup_map_lab1,

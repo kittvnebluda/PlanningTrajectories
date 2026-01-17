@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 
 from sympy import (
@@ -16,6 +17,8 @@ from platra.core.robot.configs import AckermannConfigForStaticFeedback
 
 from .common import nu, x, y
 
+logger = logging.getLogger(__name__)
+
 xsi = Matrix([x, y, nu])
 R = Matrix([[cos(nu), sin(nu), 0], [-sin(nu), cos(nu), 0], [0, 0, 1]])
 
@@ -32,6 +35,8 @@ RTS = R.T * Sigma
 
 class LambdifiedAckermannForStaticFeedback:
     def __init__(self, conf: AckermannConfigForStaticFeedback) -> None:
+        logger.debug(f"Initializing {self.__repr__()}")
+
         h = Matrix(
             [
                 x
@@ -82,6 +87,8 @@ class LambdifiedAckermannForStaticFeedback:
         self.g_lambdified = lambdify(
             [x, y, nu, beta_3s, eta, zeta], self._g_subed, "numpy"
         )
+
+        logger.debug(f"Initialized {self.__repr__()}")
 
     def rts_fn(self, state: AckermannState) -> Callable:
         return self.rts_lambdified(
