@@ -9,7 +9,7 @@ from .prefabs import TRAJ_WPS
 from .segments import ArcPrimitive, StraightLinePrimitive
 from .stitcher import SequenceTrajectory
 from .traj import InterpType, Trajectory, TrajParams, TrajSample
-from .utils import traj_curvature, traj_length
+from .traj_utils import traj_curvature, traj_length
 from .waypoints import WaypointsTrajectory
 
 __all__ = [
@@ -28,4 +28,5 @@ __all__ = [
     "interpolate_c1",
     "interpolate_c2",
     "interpolate_bsplines",
+    "interpolate_cubic_parabola",
 ]

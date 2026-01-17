@@ -3,10 +3,9 @@ from typing import Callable
 
 import numpy as np
 import pygame
-
-from platra.core.map import OCCUPANCY_MATS, CellState, Grid
-from platra.disp import ScreenParams
-from platra.disp import gridviz as gv
+from core.map import OCCUPANCY_MATS, CellState, Grid
+from disp import ScreenParams
+from disp import gridviz as gv
 
 
 def _test_grid_draw(args):

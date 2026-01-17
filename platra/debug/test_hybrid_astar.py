@@ -1,17 +1,16 @@
-from argparse import ArgumentParser
 import logging
-from math import pi
 import timeit
+from argparse import ArgumentParser
+from math import pi
 
 import matplotlib.pyplot as plt
 import numpy as np
+from core.astar.hybrid_astar import HybridAStarPlanner
+from core.map import Grid
+from core.robot.configs import AckermannConfigForStaticFeedback
+from core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Polygon
-
-from platra.core.astar.hybrid_astar import HybridAStarPlanner
-from platra.core.map import Grid
-from platra.core.robot.configs import AckermannConfigForStaticFeedback
-from platra.core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
 
 DEMO_VID_FILEPATH = "demo_has.mp4"
 
@@ -197,22 +196,11 @@ def main(start, goal):
     )
     plt.show()
 
-    logger.info(f"Saving vid to {DEMO_VID_FILEPATH}")
-    ani.save(DEMO_VID_FILEPATH)
+    # logger.info(f"Saving vid to {DEMO_VID_FILEPATH}")
+    # ani.save(DEMO_VID_FILEPATH)
 
 
 tasks = [
     ((1, -1.5, 0.0), (3, -3.5, -np.pi / 2)),
     ((10, -9, -np.pi / 2), (2, -9, np.pi / 2)),
 ]
-
-
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("task_id", type=int)
-    args = parser.parse_args()
-    if not (0 <= args.task_id < len(tasks)):
-        raise Exception("Wrong task id")
-    start = tasks[args.task_id][0]
-    goal = tasks[args.task_id][1]
-    main(start, goal)

@@ -1,6 +1,6 @@
 from typing import Iterator
 
-from platra.types import Cell
+from typings import Cell
 
 from ..map import Grid
 

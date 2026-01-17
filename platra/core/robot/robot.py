@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from platra.core.traj import TrajSample
+from ..traj import TrajSample
 
 
 @dataclass

@@ -1,11 +1,10 @@
 from typing import Callable
 
+from core.map.grid import CellState, Grid, grid_to_world
+from core.map.map import cell_state_colors
 from pygame import Rect, Surface, draw
+from typings import Cell, Number
 
-from platra.core.map.map import cell_state_colors
-
-from ..core.map.grid import CellState, Grid, grid_to_world
-from ..types import Cell, Number
 from .screen import ScreenParams, to_screen
 
 

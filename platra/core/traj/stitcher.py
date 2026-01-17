@@ -1,9 +1,8 @@
 from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
+from core.traj.traj import Trajectory
 from numpy.typing import NDArray
-
-from platra.core.traj.traj import Trajectory
 
 from .segments import TrajectoryPrimitive
 from .traj import TrajSample

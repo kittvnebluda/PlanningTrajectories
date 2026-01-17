@@ -1,11 +1,9 @@
 from math import atan2, cos, isclose, pi, sin, sqrt
-from typing import Sequence
 
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
-
-from platra.types import Number
+from typings import Number
 
 from .traj import TrajParams
 

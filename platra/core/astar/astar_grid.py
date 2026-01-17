@@ -1,10 +1,10 @@
 from queue import PriorityQueue
 
-from platra.types import Cell
+from typings import Cell
 
 from ..map import Grid
-from .neighbors import grid_neighbors_8
 from .heuristics import h_euclidian
+from .neighbors import grid_neighbors_8
 
 
 def _discover_map(map: Grid, start: Cell, goal: Cell) -> dict[Cell, Cell]:

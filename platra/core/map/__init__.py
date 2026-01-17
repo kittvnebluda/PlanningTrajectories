@@ -1,6 +1,6 @@
-from platra.core.map.grid import Grid, cell_array_to_world, grid_to_world, world_to_grid
-from platra.core.map.map import CellState
-from platra.core.map.prefabs import OCCUPANCY_MATS
+from .grid import Grid, cell_array_to_world, grid_to_world, world_to_grid
+from .map import CellState
+from .prefabs import OCCUPANCY_MATS
 
 
 class _GridAPI:

@@ -11,8 +11,7 @@ from sympy import (
     symbols,
 )
 
-from platra.core.robot.robot import MassPointConfig
-
+from ..robot.robot import MassPointConfig
 from .common import x, y
 
 z, s_dot, m = symbols("z s_dot m")

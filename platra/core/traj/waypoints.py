@@ -50,8 +50,8 @@ class WaypointsTrajectory(Trajectory):
         return [t.pos for t in self.samples]
 
     def _invalidate_cache(self):
-        self.__dict__.pop("samples", None)
-        self.__dict__.pop("samples_pos", None)
+        self.__dict__.pop("samples", None)  # pyright: ignore[reportAttributeAccessIssue]
+        self.__dict__.pop("samples_pos", None)  # pyright: ignore[reportAttributeAccessIssue]
 
     def reset_pts(self):
         self._pts = INTERP_FUNCTIONS[self.interp_type](self.wps, self.params)

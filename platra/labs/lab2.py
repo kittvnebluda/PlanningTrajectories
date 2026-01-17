@@ -2,31 +2,30 @@ from math import cos, pi, sin
 
 import numpy as np
 import pygame
-from matplotlib import pyplot as plt
-from numpy.typing import NDArray
-from pygame import Surface, event
-
-from platra.constants import PI_DOUBLE, PI_DOUBLE_NEG
-from platra.core.robot.ackermann import AckermannState
-from platra.core.robot.configs import AckermannConfigForDynamicFeedback
-from platra.core.robot.controllers import (
+from constants import PI_DOUBLE, PI_DOUBLE_NEG
+from core.robot.ackermann import AckermannState
+from core.robot.configs import AckermannConfigForDynamicFeedback
+from core.robot.controllers import (
     DynamicFeedbackByStateController,
     StaticFeedbackByStateController,
 )
-from platra.core.symbolic.ackermann import (
+from core.symbolic.ackermann import (
     LambdifiedAckermannForDynamicFeedback,
     LambdifiedAckermannForStaticFeedback,
 )
-from platra.core.traj import (
+from core.traj import (
     ArcPrimitive,
     SequenceTrajectory,
     StraightLinePrimitive,
     Trajectory,
     TrajSample,
 )
-from platra.disp.draw import DrawParams, draw_points
-from platra.disp.robotviz import draw_ackermann
-from platra.disp.screen import ScreenParams
+from disp.draw import DrawParams, draw_points
+from disp.robotviz import draw_ackermann
+from disp.screen import ScreenParams
+from matplotlib import pyplot as plt
+from numpy.typing import NDArray
+from pygame import Surface, event
 
 from .labs import Laboratory
 

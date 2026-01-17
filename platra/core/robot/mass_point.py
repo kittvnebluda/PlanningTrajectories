@@ -4,8 +4,7 @@ from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
-
-from platra.utils import fix_angle
+from utils import fix_angle
 
 from .robot import MassPointConfig
 

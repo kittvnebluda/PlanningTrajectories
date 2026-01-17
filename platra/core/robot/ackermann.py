@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from math import atan2, hypot, pi
 from typing import Optional
 
-from numba import njit
 import numpy as np
 
 

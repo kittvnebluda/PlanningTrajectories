@@ -3,10 +3,10 @@ from time import perf_counter
 from typing import Iterable
 
 import numpy as np
+from utils import rot_t as get_rot_mat
 
 from .offline import interpolate_c0
 from .traj import TrajParams, TrajSample
-from platra.utils import rot_t as get_rot_mat
 
 
 class TrajectoryPrimitive(ABC, Iterable):

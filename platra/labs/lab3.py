@@ -4,34 +4,31 @@ from typing import Callable
 
 import numpy as np
 import pygame
+from core.robot.controllers import CoordinatedController, CoordinatedController3D
+from core.robot.mass_point import (
+    MassPointModel,
+    MassPointState,
+)
+from core.robot.mass_point_3d import (
+    MassPointModel3D,
+    MassPointState3D,
+)
+from core.robot.robot import MassPointConfig
+from core.symbolic.mass_point import (
+    CURVES_LAB3,
+    MassPointSymbolic,
+    PolarImplicitCurve,
+)
+from core.traj import TrajParams, TrajSample, WaypointsTrajectory
+from disp import DrawParams, ScreenParams, draw
+from disp import robotviz as rv
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 from pygame import Surface
 from sympy import symbols
-
-from platra.core.robot.controllers import CoordinatedController, CoordinatedController3D
-from platra.core.robot.mass_point import (
-    MassPointModel,
-    MassPointState,
-)
-from platra.core.robot.mass_point_3d import (
-    MassPointModel3D,
-    MassPointState3D,
-)
-from platra.core.robot.robot import MassPointConfig
-from platra.core.symbolic.mass_point import (
-    CURVES_LAB3,
-    EUCLIDEAN_SPIRAL,
-    MassPointSymbolic,
-    PolarImplicitCurve,
-)
-from platra.core.traj import TrajParams, TrajSample, WaypointsTrajectory
-from platra.disp import DrawParams, ScreenParams, draw
-from platra.disp import robotviz as rv
-from platra.utils import fix_angle, rot
+from utils import fix_angle
 
 from .labs import Laboratory
-
 
 x = np.linspace(-10, 10, 500)
 y = np.linspace(-10, 10, 500)

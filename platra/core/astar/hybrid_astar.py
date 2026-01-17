@@ -5,12 +5,11 @@ from queue import PriorityQueue
 from typing import Optional, Self
 
 import numpy as np
+from core.astar.heuristics import h_euclidian
+from core.map import Grid
+from core.map import grid as gr
+from core.robot.ackermann import AckermannConfig, AckermannModel, AckermannState
 from numba import njit
-
-from platra.core.astar.heuristics import h_euclidian
-from platra.core.map import Grid
-from platra.core.map import grid as gr
-from platra.core.robot.ackermann import AckermannConfig, AckermannModel, AckermannState
 
 STEER_SET = [-0.6, -0.1, 0.0, 0.1, 0.6]
 SPEED_SET = [0.1, -0.1]

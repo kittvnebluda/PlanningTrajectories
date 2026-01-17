@@ -5,7 +5,6 @@ from sympy import (
     cos,
     diff,
     lambdify,
-    pi,
     simplify,
     sin,
     sqrt,

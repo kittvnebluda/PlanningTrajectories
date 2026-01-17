@@ -12,9 +12,8 @@ from sympy import (
     symbols,
 )
 
-from platra.core.robot.ackermann import AckermannState, AckermannStateExt
-from platra.core.robot.configs import AckermannConfigForStaticFeedback
-
+from ..robot.ackermann import AckermannState, AckermannStateExt
+from ..robot.configs import AckermannConfigForStaticFeedback
 from .common import nu, x, y
 
 logger = logging.getLogger(__name__)

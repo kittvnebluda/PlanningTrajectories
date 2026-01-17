@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
+from disp.screen import ScreenParams
 from pygame import Surface, event
-
-from platra.disp.screen import ScreenParams
 
 
 class Laboratory(ABC):

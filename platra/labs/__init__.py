@@ -6,7 +6,6 @@ from .lab3 import (
     TrajStabilization3D,
 )
 from .labs import Laboratory
-from .parking import Parking
 
 __all__ = [
     "Laboratory",
@@ -16,5 +15,4 @@ __all__ = [
     "TrajStabilization2D",
     "TrajStabilization2DEuclidianSpiral",
     "TrajStabilization3D",
-    "Parking",
 ]

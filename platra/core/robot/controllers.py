@@ -1,12 +1,8 @@
-from math import atan2, pi, sqrt
+from math import pi
 
 import numpy as np
 from numpy.typing import NDArray
-
-from platra.core.symbolic.mass_point import MassPointSymbolic, PolarImplicitCurve
-from platra.core.symbolic.mass_point_3d import MassPointSymbolic3D
-from platra.core.traj import TrajSample
-from platra.utils import (
+from utils import (
     fix_angle,
     fix_angle_vec,
     orthonormalize,
@@ -15,6 +11,9 @@ from platra.utils import (
     vee_op,
 )
 
+from ..symbolic.mass_point import MassPointSymbolic, PolarImplicitCurve
+from ..symbolic.mass_point_3d import MassPointSymbolic3D
+from ..traj import TrajSample
 from .ackermann import (
     AckermannConfig,
     AckermannState,

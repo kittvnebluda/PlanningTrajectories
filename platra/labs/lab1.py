@@ -2,35 +2,34 @@ from math import cos, sin
 
 import numpy as np
 import pygame
-from matplotlib import pyplot as plt
-
-from platra.core.astar import astar
-from platra.core.map.grid import (
+from core.astar import astar
+from core.map.grid import (
     CellState,
     Grid,
     cell_array_to_world,
     grid_to_world,
     world_to_grid,
 )
-from platra.core.robot.ackermann import AckermannState
-from platra.core.robot.configs import AckermannConfigForStaticFeedback
-from platra.core.robot.controllers import StaticFeedbackByStateController
-from platra.core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
-from platra.core.traj import (
+from core.robot.ackermann import AckermannState
+from core.robot.configs import AckermannConfigForStaticFeedback
+from core.robot.controllers import StaticFeedbackByStateController
+from core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
+from core.traj import (
     InterpType,
     TrajParams,
     WaypointsTrajectory,
     traj_curvature,
     traj_length,
 )
-from platra.disp import (
+from disp import (
     DrawParams,
     draw,
     fit_screen_to_map,
     screen,
 )
-from platra.disp import gridviz as gv
-from platra.disp import robotviz as rv
+from disp import gridviz as gv
+from disp import robotviz as rv
+from matplotlib import pyplot as plt
 
 from .labs import Laboratory
 

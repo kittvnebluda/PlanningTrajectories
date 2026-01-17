@@ -1,8 +1,7 @@
 import numpy as np
+from core.traj.traj import Trajectory
 from numba import njit
 from numpy.typing import NDArray
-
-from platra.core.traj.traj import Trajectory
 
 
 @njit
