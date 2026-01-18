@@ -1,32 +1,28 @@
 from math import pi
-from time import perf_counter
 from typing import Callable
 
 import numpy as np
 import pygame
-from core.robot.controllers import CoordinatedController, CoordinatedController3D
-from core.robot.mass_point import (
-    MassPointModel,
-    MassPointState,
-)
-from core.robot.mass_point_3d import (
-    MassPointModel3D,
-    MassPointState3D,
-)
-from core.robot.robot import MassPointConfig
-from core.symbolic.mass_point import (
-    CURVES_LAB3,
-    MassPointSymbolic,
-    PolarImplicitCurve,
-)
-from core.traj import TrajParams, TrajSample, WaypointsTrajectory
-from disp import DrawParams, ScreenParams, draw
-from disp import robotviz as rv
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 from pygame import Surface
 from sympy import symbols
-from utils import fix_angle
+
+from platra.core.robot.controllers import CoordinatedController
+from platra.core.robot.mass_point import (
+    MassPointModel,
+    MassPointState,
+)
+from platra.core.robot.robot import MassPointConfig
+from platra.core.symbolic.mass_point import (
+    CURVES_LAB3,
+    MassPointSymbolic,
+    PolarImplicitCurve,
+)
+from platra.core.traj import TrajParams, TrajSample, WaypointsTrajectory
+from platra.disp import DrawParams, ScreenParams, draw
+from platra.disp import robotviz as rv
+from platra.utils import fix_angle
 
 from .labs import Laboratory
 
@@ -435,230 +431,3 @@ class TrajStabilization2DEuclidianSpiral(Laboratory):
         rv.cursor(surface, self.robot.pose, self.robot_dp, self.screen_params)
 
         # self.draw_debug_info(surface, self.reg.debug_info)
-
-
-class TrajStabilization3D(Laboratory):
-    def __init__(self) -> None:
-        self.screen_params = ScreenParams(1920, 1080, 50, (-200, 200))
-
-        self.path = []
-        self.debug = []
-
-        self.initial_pos = np.array([0, -2, 10])
-
-        self.conf = MassPointConfig(mass=4.1, inertia_moment=2)
-        self.initial_state = MassPointState3D(pos=self.initial_pos)
-        self.robot = MassPointModel3D(self.conf, self.initial_state)
-
-        self.reg = CoordinatedController3D(
-            conf=self.conf,
-            s_dot_star=2.1,
-            k_s=20,
-            k_1e1=200,
-            k_1e2=200,
-            k_2e1=200,
-            k_2e2=200,
-            k_r=10,
-            k_w=10,
-            fx_max=2000,
-            fy_max=2000,
-            fz_max=2000,
-            mc_max=1000,
-        )
-
-        self.start_time = perf_counter()
-
-    def draw_debug_info(self, surface: Surface, debug_info) -> None:
-        font = pygame.font.SysFont("Arial", 16)
-        debug_texts = [
-            f"Fc = {debug_info['Fc'].round(3)}",
-            f"Mc = {debug_info['Mc'].round(3)}",
-            f"e_w = {debug_info['e_w'].round(3)}",
-            f"a_d = {debug_info['a_d'].round(3)}",
-            f"omega = {debug_info['omega'].round(2)}",
-            f"omega_star= {debug_info['omega_star'].round(2)}",
-            f"omega_dot_star= {debug_info['omega_dot_star'].round(2)}",
-            f"alpha = {debug_info['alpha'].round(2)}",
-            f"alpha_star = {debug_info['alpha_star'].round(2)}",
-            f"e_r = {debug_info['e_r'].round(3)}",
-        ]
-
-        for i, text in enumerate(debug_texts):
-            surface.blit(font.render(text, True, (0, 0, 0)), (10, 10 + i * 20))
-
-    def plot_path(self):
-        path = np.array(self.path)
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection="3d")
-
-        ax.plot(path[:, 0], path[:, 1], path[:, 2])
-        ax.scatter(
-            self.initial_pos[0],
-            self.initial_pos[1],
-            self.initial_pos[2],
-            color="red",
-            s=100,
-            label="Начало",
-            marker="o",
-            edgecolors="black",
-            linewidths=0.5,
-        )
-
-        ax.set_xlabel("x, m")
-        ax.set_ylabel("y, m")
-        ax.set_zlabel("z, m")
-
-        ax.grid()
-        ax.set_box_aspect((1, 1, 1))
-
-        plt.title("Трехмерная траектория")
-        plt.show()
-
-    def plot_errors(self):
-        n, m = 2, 1
-        plt.figure()
-
-        deltas = np.array([self.debug[i]["delta"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 1)
-        plt.plot(deltas[:, 0])
-        plt.plot(deltas[:, 1])
-        plt.plot(deltas[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("delta")
-        plt.grid()
-
-        es = np.array([self.debug[i]["e"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 2)
-        plt.plot(es[:, 0])
-        plt.plot(es[:, 1])
-        plt.xlabel("index")
-        plt.ylabel("e")
-        plt.grid()
-
-        plt.show()
-
-    def plot_control(self):
-        n, m = 2, 1
-        plt.figure()
-
-        fcs = np.array([self.debug[i]["Fc"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 1)
-        plt.plot(fcs[:, 0])
-        plt.plot(fcs[:, 1])
-        plt.plot(fcs[:, 2])
-        plt.ylabel("Fc")
-        plt.grid()
-
-        mcs = np.array([self.debug[i]["Mc"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 2)
-        plt.plot(mcs[:, 0])
-        plt.plot(mcs[:, 1])
-        plt.plot(mcs[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("Mc")
-        plt.grid()
-
-        plt.show()
-
-    def plot_angles(self):
-        n, m = 8, 1
-        plt.figure()
-
-        omega = np.array([self.debug[i]["omega"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 1)
-        plt.plot(omega[:, 0])
-        plt.plot(omega[:, 1])
-        plt.plot(omega[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("omega")
-        plt.grid()
-
-        omega_star = np.array(
-            [self.debug[i]["omega_star"] for i in range(len(self.debug))]
-        )
-        plt.subplot(n, m, 2)
-        plt.plot(omega_star[:, 0])
-        plt.plot(omega_star[:, 1])
-        plt.plot(omega_star[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("omega_star")
-        plt.grid()
-
-        omega_dot_star = np.array(
-            [self.debug[i]["omega_dot_star"] for i in range(len(self.debug))]
-        )
-        plt.subplot(n, m, 3)
-        plt.plot(omega_dot_star[:, 0])
-        plt.plot(omega_dot_star[:, 1])
-        plt.plot(omega_dot_star[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("omega_dot_star")
-        plt.grid()
-
-        e_w = np.array([self.debug[i]["e_w"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 4)
-        plt.plot(e_w[:, 0])
-        plt.plot(e_w[:, 1])
-        plt.plot(e_w[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("e_w")
-        plt.grid()
-
-        a_d = np.array([self.debug[i]["a_d"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 5)
-        plt.plot(a_d[:, 0])
-        plt.plot(a_d[:, 1])
-        plt.plot(a_d[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("a_d")
-        plt.grid()
-
-        alpha = np.array([self.debug[i]["alpha"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 6)
-        plt.plot(alpha[:, 0])
-        plt.plot(alpha[:, 1])
-        plt.plot(alpha[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("alpha")
-        plt.grid()
-
-        alpha_star = np.array(
-            [self.debug[i]["alpha_star"] for i in range(len(self.debug))]
-        )
-        plt.subplot(n, m, 7)
-        plt.plot(alpha_star[:, 0])
-        plt.plot(alpha_star[:, 1])
-        plt.plot(alpha_star[:, 2])
-        plt.xlabel("index")
-        plt.ylabel("alpha_star")
-        plt.grid()
-
-        e_r = np.array([self.debug[i]["e_r"] for i in range(len(self.debug))])
-        plt.subplot(n, m, 8)
-        plt.plot(e_r[:, 0])
-        plt.plot(e_r[:, 2])
-        plt.plot(e_r[:, 1])
-        plt.xlabel("index")
-        plt.ylabel("e_r")
-        plt.grid()
-
-        plt.show()
-
-    def draw(self, surface: Surface, dt: float) -> None:
-        u = self.reg.compute_control(self.robot.state, TrajSample(), dt)
-        self.robot.step(u, dt)
-
-        p = self.robot.pos
-
-        self.path.append(p)
-        self.debug.append(self.reg.debug_info.copy())
-
-        self.draw_debug_info(surface, self.reg.debug_info)
-
-        if perf_counter() - self.start_time > 15:
-            self.plot_path()
-            self.plot_errors()
-            self.plot_control()
-            self.plot_angles()
-            exit()

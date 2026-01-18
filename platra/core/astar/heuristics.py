@@ -1,5 +1,6 @@
 from numba import njit
-from typings import Number
+
+from platra.typings import Number
 
 
 @njit

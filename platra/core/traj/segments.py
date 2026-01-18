@@ -3,7 +3,8 @@ from time import perf_counter
 from typing import Iterable
 
 import numpy as np
-from utils import rot_t as get_rot_mat
+
+from platra.utils import rot_t as get_rot_mat
 
 from .offline import interpolate_c0
 from .traj import TrajParams, TrajSample
@@ -25,20 +26,30 @@ class ArcPrimitive(TrajectoryPrimitive):
         resolution: float,
         vel_norm: float,
     ):
-        theta_end = arc_len / radius
-        theta = np.arange(0, theta_end, resolution)
+        theta_end = arc_len
+        if theta_end > 0:
+            theta = np.arange(0, theta_end, resolution / radius)
+        elif theta_end < 0:
+            theta = np.arange(theta_end, 0, resolution / radius)
+        else:
+            raise Exception("theta_end has to be non-zero")
+
         pos = radius * np.vstack([np.cos(theta), np.sin(theta)])
         rot = get_rot_mat(circle_rot)
-        self.pos = rot @ pos + center_shift.reshape(2, 1)
+        self.pos = rot @ pos
+        self.pos = self.pos.T
+        self.pos = self.pos - self.pos[0] + center_shift
 
         vel = np.vstack([-np.sin(theta), np.cos(theta)])
-        vel = vel / np.linalg.norm(vel, axis=1) * vel_norm
+        vel = vel * vel_norm
         self.vel = rot @ vel
+        self.vel = self.vel.T
 
         acc_mag = vel_norm**2 / radius
         acc = np.vstack([-np.cos(theta), -np.sin(theta)])
-        acc = acc / np.linalg.norm(acc, axis=1) * acc_mag
-        self.acc = rot * acc
+        acc = acc * acc_mag
+        self.acc = rot @ acc
+        self.acc = self.acc.T
 
         self.jerk = np.zeros(2)
 

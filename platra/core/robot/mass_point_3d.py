@@ -3,7 +3,8 @@ from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
-from utils import orthonormalize, vee_op, wedge_op
+
+from platra.utils import orthonormalize, vee_op, wedge_op
 
 from .robot import MassPointConfig
 

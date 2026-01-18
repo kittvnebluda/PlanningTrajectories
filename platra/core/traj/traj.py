@@ -18,6 +18,7 @@ class TrajSample:
     jerk: NDArray = field(default_factory=lambda: np.zeros(2))
 
 
+# TODO: How can we reset trajectory?
 class Trajectory(ABC):
     @abstractmethod
     def sample(self) -> TrajSample: ...

@@ -9,7 +9,7 @@ from .prefabs import TRAJ_WPS
 from .segments import ArcPrimitive, StraightLinePrimitive
 from .stitcher import SequenceTrajectory
 from .traj import InterpType, Trajectory, TrajParams, TrajSample
-from .traj_utils import traj_curvature, traj_length
+from .utils import traj_curvature, traj_length
 from .waypoints import WaypointsTrajectory
 
 __all__ = [

@@ -1,6 +1,6 @@
 from queue import PriorityQueue
 
-from typings import Cell
+from platra.typings import Cell
 
 from ..map import Grid
 from .heuristics import h_euclidian

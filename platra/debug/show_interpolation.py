@@ -1,5 +1,7 @@
 import numpy as np
-from core.traj import (
+from matplotlib import pyplot as plt
+
+from platra.core.traj import (
     TRAJ_WPS,
     TrajParams,
     interpolate_bsplines,
@@ -8,7 +10,6 @@ from core.traj import (
     interpolate_c2,
     interpolate_cubic_parabola,
 )
-from matplotlib import pyplot as plt
 
 
 def show_trajectory(interp_func, pts):

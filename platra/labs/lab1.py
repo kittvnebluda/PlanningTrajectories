@@ -1,35 +1,29 @@
-from math import cos, sin
-
 import numpy as np
 import pygame
-from core.astar import astar
-from core.map.grid import (
+from matplotlib import pyplot as plt
+
+from platra.core.astar import astar
+from platra.core.map.grid import (
     CellState,
     Grid,
     cell_array_to_world,
     grid_to_world,
     world_to_grid,
 )
-from core.robot.ackermann import AckermannState
-from core.robot.configs import AckermannConfigForStaticFeedback
-from core.robot.controllers import StaticFeedbackByStateController
-from core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
-from core.traj import (
+from platra.core.traj import (
     InterpType,
     TrajParams,
     WaypointsTrajectory,
     traj_curvature,
     traj_length,
 )
-from disp import (
+from platra.disp import (
     DrawParams,
     draw,
     fit_screen_to_map,
     screen,
 )
-from disp import gridviz as gv
-from disp import robotviz as rv
-from matplotlib import pyplot as plt
+from platra.disp import gridviz as gv
 
 from .labs import Laboratory
 
@@ -64,33 +58,12 @@ class TrajPlanning(Laboratory):
         self.wps = cell_array_to_world(self.path, *self.map_disp_params)
         self.traj = WaypointsTrajectory(self.wps, self.traj_params)
 
-        # ---- Robot ----
-        L1 = np.array([[20, 0], [0, 10]])
-        L2 = np.array([[2, 0], [0, 2]])
-        self.conf = AckermannConfigForStaticFeedback.from_symbolic(
-            Lf=0.15,
-            Ls=0.5,
-            e=0.2,
-            r=0.1,
-            symbolic_model=LambdifiedAckermannForStaticFeedback,
-        )
-        start = cell_array_to_world([self.start], *self.map_disp_params)[0]
-        self.reg = StaticFeedbackByStateController(self.conf, L1, L2)
-        self.initial_state = AckermannState(
-            np.array([start[0], start[1], 0]), -self.conf.alpha3s, 0, 0
-        )
-        self.robot = create_robot_model(self.conf, self.initial_state)
-        self.robot_dp = DrawParams()
-        self.target = self.traj.sample()
-        self._traj_ended = False
-
     def handle_keydown(self, key: pygame.event.Event):
         match key:
             case pygame.K_l:
                 print(f"Trajectory length: {traj_length(self.traj):.3f} m")
             case pygame.K_n:
                 self.traj.next_interp_type()
-                self.robot = create_robot_model(self.conf, self.initial_state)
                 self.i = 0
             case pygame.K_c:
                 curvature = traj_curvature(self.traj)
@@ -136,24 +109,7 @@ class TrajPlanning(Laboratory):
         self.wps = cell_array_to_world(self.path, *self.map_disp_params)
         self.traj.set_waypoints(self.wps)
 
-    def update_target(self) -> None:
-        try:
-            if np.linalg.norm(self.target.pos - self.conf.h(self.robot.state)) < 0.1:
-                self.target = self.traj.sample()
-                shift = self.conf.Lf * np.array(
-                    [cos(self.robot.nu), sin(self.robot.nu)]
-                )
-                self.target.pos = self.target.pos + shift
-        except StopIteration:
-            if not self._traj_ended:
-                self._traj_ended = True
-                print("Trajectory ended")
-
     def draw(self, surface: pygame.Surface, dt: float):
-        self.update_target()
-        v = self.reg.compute_control(self.robot.state, self.target, dt)
-        self.robot.step(v[0], v[1], dt)
-
         gv.draw_grid(
             self.map, surface, *self.map_disp_params, screen_params=self.screen_params
         )
@@ -165,11 +121,5 @@ class TrajPlanning(Laboratory):
                 grid_to_world(self.goal, *self.map_disp_params),
             ],
             self.pts_dp,
-            self.screen_params,
-        )
-        rv.ackermann(
-            surface,
-            self.robot,
-            self.robot_dp,
             self.screen_params,
         )

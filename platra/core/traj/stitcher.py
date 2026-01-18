@@ -1,8 +1,11 @@
-from typing import Any, Generator, Iterable, Optional
+from copy import deepcopy
+from functools import cached_property
+from typing import Any, Generator, Iterable, Optional, Sequence
 
 import numpy as np
-from core.traj.traj import Trajectory
 from numpy.typing import NDArray
+
+from platra.core.traj.traj import Trajectory
 
 from .segments import TrajectoryPrimitive
 from .traj import TrajSample
@@ -19,29 +22,30 @@ def stitch(
     else:
         assert len(shift) == 2
 
+    last_sample_pos = shift.copy()
     for prim in primitives:
         it = iter(prim)
-        pt = next(it)
-        pt_last = pt.copy()
+        sample: TrajSample | None = next(it)
 
-        while pt is not None:
-            pt = shift + pt
-            pt_last = pt.copy()
-            yield pt
-            pt = next(it)
+        while sample is not None:
+            sample.pos = sample.pos + shift
+            yield sample
+            last_sample_pos = sample.pos.copy()
+            sample = next(it)
 
-        shift = pt_last
+        shift = last_sample_pos.copy()
 
 
 class SequenceTrajectory(Trajectory):
     def __init__(
         self, primitives: Iterable[TrajectoryPrimitive], shift: Optional[NDArray] = None
     ) -> None:
-        self.gena = stitch(primitives, shift)
+        self._gen_factory = lambda: stitch(primitives, shift)  # ← important!
+        self._gen = self._gen_factory()
         self.last_gen = TrajSample()
 
     def sample(self) -> TrajSample:
-        gen = next(self.gena)
+        gen = next(self._gen)
         if gen is None:
             self.last_gen.vel = VEC2_ZERO
             self.last_gen.acc = VEC2_ZERO
@@ -50,5 +54,10 @@ class SequenceTrajectory(Trajectory):
         self.last_gen = gen
         return gen
 
-    def to_samples(self) -> Iterable[TrajSample]:
-        return tuple(self.gena)
+    @cached_property
+    def samples(self) -> Sequence[TrajSample]:
+        return tuple(self._gen_factory())
+
+    @cached_property
+    def samples_pos(self) -> Sequence[NDArray]:
+        return [s.pos for s in self.samples]

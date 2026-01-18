@@ -1,8 +1,7 @@
 from typing import Iterator
 
-from typings import Cell
-
-from ..map import Grid
+from platra.core.map import Grid
+from platra.typings import Cell
 
 DIRECTIONS_8 = [
     (-1, 0),

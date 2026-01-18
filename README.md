@@ -14,7 +14,7 @@ you can run any lab or debug scenario directly from the command line.
 The `platra` package provides several lab exercises. Use the following syntax:
 
 ```bash
-python platra <lab> [task]
+python -m platra <lab> [task]
 ```
 
 **Examples:**
@@ -22,22 +22,22 @@ python platra <lab> [task]
 * **Lab 1 (Trajectory Planning):**
 
 ```bash
-python platra lab1
+python -m platra lab1
 ```
 
 * **Lab 2 (Tracking / Teleoperation):**
 
 ```bash
-python platra lab2 tracking
-python platra lab2 teleop
+python -m platra lab2 tracking
+python -m platra lab2 teleop
 ```
 
 * **Lab 3 (Trajectory Stabilization / 3D):**
 
 ```bash
-python platra lab3 2d
-python platra lab3 2d_spiral
-python platra lab3 3d
+python -m platra lab3 2d
+python -m platra lab3 2d_spiral
+python -m platra lab3 3d
 ```
 
 ### Running Debug Scenarios
@@ -45,13 +45,13 @@ python platra lab3 3d
 Debug scenarios allow testing specific modules or cases, such as parking maneuvers.
 
 ```bash
-python platra debug <module> <task_id>
+python -m platra debug <module> <task_id>
 ```
 
 **Example: Parking**
 
 ```bash
-python platra debug parking 0
+python -m platra debug parking 0
 ```
 
 * `<module>` — the debug module to run (`parking` for parking scenarios).
@@ -63,4 +63,4 @@ python platra debug parking 0
 part, fix it.
 * Automatic creation of launch arguments with decorator for every class
 that extends Laboratory abstract class.
-* Add Poetry
+* Poetry

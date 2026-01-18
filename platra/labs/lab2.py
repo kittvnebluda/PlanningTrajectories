@@ -1,35 +1,33 @@
+import logging
 from math import cos, pi, sin
 
 import numpy as np
 import pygame
-from constants import PI_DOUBLE, PI_DOUBLE_NEG
-from core.robot.ackermann import AckermannState
-from core.robot.configs import AckermannConfigForDynamicFeedback
-from core.robot.controllers import (
-    DynamicFeedbackByStateController,
-    StaticFeedbackByStateController,
-)
-from core.symbolic.ackermann import (
-    LambdifiedAckermannForDynamicFeedback,
-    LambdifiedAckermannForStaticFeedback,
-)
-from core.traj import (
+from matplotlib import pyplot as plt
+from numpy.typing import NDArray
+from pygame import Surface, event
+
+from platra.constants import PI_DOUBLE, PI_DOUBLE_NEG
+from platra.core.robot.ackermann import AckermannModel, AckermannState
+from platra.core.robot.configs import AckermannConfigForStaticFeedback
+from platra.core.robot.controllers import StaticFeedbackByStateController
+from platra.core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
+from platra.core.traj import (
     ArcPrimitive,
     SequenceTrajectory,
     StraightLinePrimitive,
     Trajectory,
     TrajSample,
 )
-from disp.draw import DrawParams, draw_points
-from disp.robotviz import draw_ackermann
-from disp.screen import ScreenParams
-from matplotlib import pyplot as plt
-from numpy.typing import NDArray
-from pygame import Surface, event
+from platra.disp.draw import DrawParams, draw_points
+from platra.disp.robotviz import draw_ackermann
+from platra.disp.screen import ScreenParams
 
 from .labs import Laboratory
 
 VEC2_ZERO = np.zeros(2)
+
+logger = logging.getLogger(__name__)
 
 
 class TrajTracking(Laboratory):
@@ -53,7 +51,6 @@ class TrajTracking(Laboratory):
         radius_1 (float): The radius of the first circular motion.
         delta (float): The change in azimuth for the first circular motion in radians.
         alpha (float): The turn angle in radians before the straight-line movement.
-        time (float): The duration of the straight-line movement in seconds.
         radius_2 (float): The radius of the second circular motion.
         clockwise (bool): Direction for the recond circular motion.
     """
@@ -64,11 +61,9 @@ class TrajTracking(Laboratory):
         radius_1: float = 6,
         delta: float = -1 * pi,
         alpha: float = pi / 3,
-        time: float = 1,
         radius_2: float = 10,
         clockwise: bool = True,
     ) -> None:
-        self._traj_ended = False
         self.path = []
         self.vs = []
         self.path_err = []
@@ -76,17 +71,13 @@ class TrajTracking(Laboratory):
         L1 = np.array([[20, 0], [0, 10]])
         L2 = np.array([[2, 0], [0, 2]])
 
-        # self.conf = AckermannConfigForStaticFeedback.from_symbolic(
-        #     0.35, 1, 0.4, 0.2, LambdifiedAckermannForStaticFeedback
-        # )
-        # self.reg = StaticFeedbackByStateController(self.conf, L1, L2)
-        self.conf = AckermannConfigForDynamicFeedback.from_symbolic(
-            0.4, 1, 2, 0.2, LambdifiedAckermannForDynamicFeedback
+        self.conf = AckermannConfigForStaticFeedback.from_symbolic(
+            0.35, 1, 0.4, 0.2, LambdifiedAckermannForStaticFeedback
         )
-        self.reg = DynamicFeedbackByStateController(self.conf)
+        self.reg = StaticFeedbackByStateController(self.conf, L1, L2)
 
         initial_state = AckermannState(initial_xsi.copy(), -self.conf.alpha3s, 0, 0)
-        self.robot = create_robot_model(self.conf, initial_state)
+        self.robot = AckermannModel(self.conf, initial_state)
 
         self.traj_draw_params = DrawParams(size=2, color=(0, 0, 255))
         self.path_draw_params = DrawParams(size=2, color=(0, 0, 0))
@@ -101,14 +92,12 @@ class TrajTracking(Laboratory):
             radius_1,
             delta,
             alpha,
-            time,
             radius_2,
             clockwise,
         )
-        self._complete_traj = self.traj.samples()
 
     def _traj_generator(
-        self, initial_xsi, R1, delta, alpha, time, R2, clockwise, samples=1000
+        self, initial_xsi, R1, delta, alpha, R2, clockwise
     ) -> Trajectory:
         angle1 = alpha + initial_xsi[2] + delta
         angle2 = PI_DOUBLE_NEG if clockwise else PI_DOUBLE
@@ -116,89 +105,79 @@ class TrajTracking(Laboratory):
         res = 0.1
         vel_norm = 0.5
 
-        primitives = []
-        primitives.append(
-            ArcPrimitive(
-                radius=R1,
-                arc_len=delta,
-                center_shift=initial_xsi[:2] + np.array([-R1, 0]),
-                circle_rot=0,
-                resolution=res,
-                vel_norm=vel_norm,
-            )
-        )
-        primitives.append(
-            StraightLinePrimitive(
-                end=(10 * cos(angle1), 10 * sin(angle1)),
-                vel_norm=vel_norm,
-                resolution=res,
-            )
-        )
-        primitives.append(
-            ArcPrimitive(
-                radius=R2,
-                arc_len=angle2,
-                center_shift=np.array(
-                    [
-                        -R2 * cos(alpha + delta - pi / 5),
-                        -R2 * sin(alpha + delta - pi / 5),
-                    ]
+        return SequenceTrajectory(
+            [
+                ArcPrimitive(
+                    radius=R1,
+                    arc_len=delta,
+                    center_shift=initial_xsi[:2],
+                    circle_rot=0,
+                    resolution=res,
+                    vel_norm=vel_norm,
                 ),
-                circle_rot=pi + pi / 10,
-                resolution=res,
-                vel_norm=vel_norm,
-            )
+                StraightLinePrimitive(
+                    end=(10 * cos(angle1), 10 * sin(angle1)),
+                    vel_norm=vel_norm,
+                    resolution=res,
+                ),
+                ArcPrimitive(
+                    radius=R2,
+                    arc_len=angle2,
+                    center_shift=VEC2_ZERO,
+                    circle_rot=0,
+                    resolution=res,
+                    vel_norm=vel_norm,
+                ),
+            ]
         )
 
-        traj = SequenceTrajectory(primitives)
-        return traj
+    def plot(self):
+        p = np.array(self.path)
+        if len(p) == 0:
+            logger.info("Path is empty, nothing to show")
+            exit()
+
+        plt.axes().set_aspect("equal")
+        plt.plot(p[:, 0], p[:, 1])
+        plt.grid()
+        plt.show()
+
+        vs = np.array(self.vs)
+        plt.plot(vs[:, 0])
+        plt.plot(vs[:, 1], "--")
+        plt.grid()
+        plt.show()
+
+        plt.plot(self.path_err)
+        plt.grid()
+        plt.show()
+
+        exit()
 
     def draw(self, surface: Surface, dt: float):
-        if np.linalg.norm(self.target - self.conf.h(self.robot.state)) < 0.5:
+        if np.linalg.norm(self.target.pos - self.conf.h(self.robot.state)) < 0.5:
             try:
                 self.target = self.traj.sample()
                 self.path.append(self.conf.h(self.robot.state))
                 self.path_err.append(
-                    np.min(np.linalg.norm(self._complete_traj - self.path[-1], axis=1))
+                    np.min(
+                        np.linalg.norm(self.traj.samples_pos - self.path[-1], axis=1)
+                    )
                 )
-
             except StopIteration:
-                if not self._traj_ended:
-                    self._traj_ended = True
-                    print("Trajectory ended")
-                p = np.array(self.path)
-                plt.axes().set_aspect("equal")
-                plt.plot(p[:, 0], p[:, 1])
-                plt.grid()
-                plt.show()
+                self.plot()
 
-                vs = np.array(self.vs)
-                plt.plot(vs[:, 0])
-                plt.plot(vs[:, 1], "--")
-                plt.grid()
-                plt.show()
-
-                plt.plot(self.path_err)
-                plt.grid()
-                plt.show()
-
-                exit()
-
-        v = self.reg.compute_control(
-            self.robot.state,
-            self.target.pos,
-            self.target.vel,
-            self.target.acc,
-            dt,
-        )
+        v = self.reg.compute_control(self.robot.state, self.target, dt)
         self.vs.append(v)
         self.robot.step(v[0], v[1], dt)
 
         draw_points(
-            surface, self._complete_traj, self.traj_draw_params, self.screen_params
+            surface, self.traj.samples_pos, self.traj_draw_params, self.screen_params
         )
         draw_points(surface, self.path, self.path_draw_params, self.screen_params)
-        draw_points(surface, [self.target], self.target_draw_params, self.screen_params)
+        draw_points(
+            surface, [self.target.pos], self.target_draw_params, self.screen_params
+        )
         draw_ackermann(
             surface, self.robot, self.robot_draw_params, self.screen_params, draw_h=True
         )
@@ -219,7 +198,7 @@ class Teleop(TrajTracking):
         initial_state = AckermannState(
             np.array([0, 0, 0], dtype=float), -conf.alpha3s, 0, 0
         )
-        self.robot = create_robot_model(conf, initial_state)
+        self.robot = AckermannModel(conf, initial_state)
 
         self.robot_draw_params = DrawParams()
         self.target_draw_params = DrawParams(size=10, color=(255, 0, 0))

@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from pygame import Vector2
-from typings import Pixel
+
+from platra.typings import Pixel
 
 
 @dataclass(frozen=True)

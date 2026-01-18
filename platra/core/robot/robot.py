@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ..traj import TrajSample
+from platra.core.traj import TrajSample
 
 
 @dataclass
@@ -17,6 +17,7 @@ class RobotController(ABC):
     def compute_control(self, state, target: TrajSample, dt: float) -> np.ndarray: ...
 
 
+# TODO: Right now useless class
 class Robot:
     def __init__(
         self,

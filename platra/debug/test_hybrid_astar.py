@@ -1,16 +1,16 @@
 import logging
 import timeit
-from argparse import ArgumentParser
 from math import pi
 
 import matplotlib.pyplot as plt
 import numpy as np
-from core.astar.hybrid_astar import HybridAStarPlanner
-from core.map import Grid
-from core.robot.configs import AckermannConfigForStaticFeedback
-from core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Polygon
+
+from platra.core.astar.hybrid_astar import HybridAStarPlanner
+from platra.core.map import Grid
+from platra.core.robot.configs import AckermannConfigForStaticFeedback
+from platra.core.symbolic.ackermann import LambdifiedAckermannForStaticFeedback
 
 DEMO_VID_FILEPATH = "demo_has.mp4"
 

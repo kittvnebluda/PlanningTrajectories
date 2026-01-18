@@ -1,9 +1,10 @@
 from math import atan, cos, isclose, pi, sin, tan
 
 import numpy as np
-from constants import PI3DIV2
-from core.robot.ackermann import AckermannConfig, AckermannModel, AckermannState
 from pygame import Surface, Vector2, draw
+
+from platra.constants import PI3DIV2
+from platra.core.robot.ackermann import AckermannConfig, AckermannModel, AckermannState
 
 from .draw import DrawParams
 from .screen import ScreenParams, np_vec2screen, to_screen

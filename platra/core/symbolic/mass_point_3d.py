@@ -11,7 +11,6 @@ from sympy import (
     symbols,
 )
 
-from ..robot.robot import MassPointConfig
 from .common import x, y
 
 z, s_dot, m = symbols("z s_dot m")

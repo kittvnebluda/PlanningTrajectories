@@ -1,7 +1,8 @@
 from math import isclose
 
 import pytest
-from core.map import grid_to_world, world_to_grid
+
+from platra.core.map import grid_to_world, world_to_grid
 
 
 @pytest.mark.parametrize(

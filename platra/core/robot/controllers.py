@@ -1,18 +1,13 @@
 from math import pi
 
 import numpy as np
-from numpy.typing import NDArray
-from utils import (
+
+from platra.utils import (
     fix_angle,
-    fix_angle_vec,
-    orthonormalize,
-    rot_3d,
     rot_t,
-    vee_op,
 )
 
 from ..symbolic.mass_point import MassPointSymbolic, PolarImplicitCurve
-from ..symbolic.mass_point_3d import MassPointSymbolic3D
 from ..traj import TrajSample
 from .ackermann import (
     AckermannConfig,
@@ -21,7 +16,6 @@ from .ackermann import (
 )
 from .configs import AckermannConfigForDynamicFeedback
 from .mass_point import MassPointState
-from .mass_point_3d import MassPointState3D
 from .robot import MassPointConfig, RobotController
 
 
@@ -129,7 +123,7 @@ class CoordinatedController(RobotController):
     def __init__(
         self,
         conf: MassPointConfig,
-        mps: PolarImplicitCurve,
+        mps: PolarImplicitCurve | MassPointSymbolic,
         s_dot_star,
         k_s,
         k_e1,
@@ -193,11 +187,18 @@ class CoordinatedController(RobotController):
         omega = state.omega
 
         # Вычисляем текущие значения
-        phi = self.mps.phi(x, y)
-        alpha_star = fix_angle(self.mps.alpha(x, y))
-        jacobi = rot_t(alpha_star)
-        xi = self.mps.xi(x, y)
-        xi_dot = self.mps.xi_dot(x, y)
+        if isinstance(self.mps, PolarImplicitCurve):
+            phi = self.mps.phi(x, y)
+            alpha_star = fix_angle(self.mps.alpha(x, y))
+            jacobi = rot_t(alpha_star)
+            xi = self.mps.xi(x, y)
+            xi_dot = self.mps.xi_dot(x, y)
+        else:
+            phi = self.mps.phi(self.traj_id, x, y)
+            alpha_star = fix_angle(self.mps.alpha(self.traj_id, x, y))
+            jacobi = rot_t(alpha_star)
+            xi = self.mps.xi(self.traj_id, x, y)
+            xi_dot = self.mps.xi_dot(self.traj_id, x, y)
 
         # Вычисляем текущее положение в координатах Фрине
         s_dot, e_dot = jacobi @ np.array([vx, vy])
@@ -249,127 +250,3 @@ class CoordinatedController(RobotController):
         )
 
         return F
-
-
-class CoordinatedController3D(RobotController):
-    def __init__(
-        self,
-        conf: MassPointConfig,
-        s_dot_star,
-        k_s,
-        k_1e1,
-        k_1e2,
-        k_2e1,
-        k_2e2,
-        k_r,
-        k_w,
-        fx_max,
-        fy_max,
-        fz_max,
-        mc_max,
-        delta_alpha: NDArray = np.zeros(3),
-    ) -> None:
-        self.conf = conf
-        self.mps = MassPointSymbolic3D
-        self.fx_max = fx_max
-        self.fy_max = fy_max
-        self.fz_max = fz_max
-        self.mc_max = mc_max
-        self.delta_alpha = delta_alpha
-        self.s_dot_star = s_dot_star  # Желаемая касательная скорость
-        self.m = self.conf.mass
-        self.J = self.conf.inertia_moment
-
-        self.k_s = k_s
-        self.k_1e1 = k_1e1
-        self.k_1e2 = k_1e2
-        self.k_2e1 = k_2e1
-        self.k_2e2 = k_2e2
-        self.k_r = k_r
-        self.k_w = k_w
-
-        self.omega_star_prev = np.zeros(3)
-        self.F = np.zeros(6)
-        self.debug_info = {
-            "alpha": (0, 0, 0),
-            "delta": (0, 0, 0),
-            "e": (0, 0),
-            "Fc": (0, 0, 0),
-            "Mc": (0, 0, 0),
-            "e_r": (0, 0, 0),
-        }
-
-    def compute_control(
-        self, state: MassPointState3D, target: TrajSample, dt: float
-    ) -> np.ndarray:
-        pos = state.pos
-        x, y, z = pos
-        v = state.vel
-        Ra = state.R
-        omega = state.omega
-        mps = self.mps
-        J = self.J
-        m = self.m
-
-        # Вычисляем 🧮
-        alpha_star = fix_angle_vec(mps.alpha(x, y, z))
-        ups = mps.jacobi(x, y, z)  # <- Upsilon
-        ups_dot = mps.jacobi_dot(x, y, z)
-        e1 = mps.phi(0, x, y, z)
-        e2 = mps.phi(1, x, y, z)
-
-        s_dot, e1_dot, e2_dot = ups @ v
-        # omega_star = mps.omega_star(x, y, z, v[0], v[1], v[2])
-        omega_star = mps.omega_star(x, y, z, s_dot)
-        # omega_star_dot = mps.omega_star_dot(
-        #     x, y, z, v[0], v[1], v[2], self.F[0], self.F[1], self.F[2]
-        # )
-        omega_star_dot = (omega_star - self.omega_star_prev) / dt
-        self.omega_star_prev = omega_star
-        A = np.array([[m, 0, 0], [0, m, 0], [0, 0, J]])
-
-        # Управляем послупательным движением ➡️
-        us = self.k_s * (self.s_dot_star - s_dot)
-        ue1 = -self.k_1e1 * e1_dot - self.k_2e1 * e1
-        ue2 = -self.k_1e2 * e2_dot - self.k_2e2 * e2
-        Fc = self.m * np.linalg.inv(ups) @ (np.array([us, ue1, ue2]) - ups_dot @ v)
-
-        # Управляем вращательным движением 😡😡😡😡😡😡😡😡😡 ⤵️
-        Ras = orthonormalize(rot_3d(-alpha_star))
-        Rerr = Ra @ Ras
-        Rdes = Rerr @ rot_3d(-self.delta_alpha)
-        e_r = vee_op(Rdes - Rdes.T) * 0.5
-        e_w = omega - Rerr @ omega_star
-        a_d = -np.cross(omega, Rerr @ omega_star) + Rerr @ omega_star_dot
-        Mc = np.cross(omega, A @ omega) + A @ a_d - self.k_r * e_r - self.k_w * e_w
-
-        # Ограничиваем управление
-        Fc = np.clip(
-            Fc,
-            (-self.fx_max, -self.fy_max, -self.fz_max),
-            (self.fx_max, self.fy_max, self.fz_max),
-        )
-        Mc = np.clip(
-            Mc,
-            (-self.mc_max, -self.mc_max, -self.mc_max),
-            (self.mc_max, self.mc_max, self.mc_max),
-        )
-
-        self.debug_info.update(
-            {
-                "e": (e1, e2),
-                "Fc": Fc,
-                "Mc": Mc,
-                "alpha": state.alpha,
-                "alpha_star": alpha_star,
-                "e_r": e_r,
-                "omega": omega,
-                "omega_star": omega_star,
-                "omega_dot_star": omega_star_dot,
-                "e_w": e_w,
-                "a_d": a_d,
-            }
-        )
-
-        self.F = np.hstack([Fc, Mc])
-        return self.F

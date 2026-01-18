@@ -12,4 +12,4 @@ class _GridAPI:
 
 grid = _GridAPI()
 
-__all__ = ["grid", "CellState"]
+__all__ = ["grid", "CellState", "OCCUPANCY_MATS"]

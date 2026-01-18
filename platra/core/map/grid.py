@@ -4,7 +4,8 @@ from sys import maxsize
 from typing import Iterable
 
 import numpy as np
-from typings import Cell, Number
+
+from platra.typings import Cell, Number
 
 from .map import CellState
 from .prefabs import OCCUPANCY_MATS
